@@ -1,69 +1,61 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>기억조작 자판기</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=DungGeunMo&display=swap" rel="stylesheet">
-    
-    <style>
-        body { background-color: #d4d4d4; font-family: 'DungGeunMo', monospace; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .mac-window { background-color: #e0e0e0; border: 2px solid #000; width: 100%; max-width: 400px; box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; }
-        .title-bar { background-color: #fff; border-bottom: 2px solid #000; padding: 6px 10px; display: flex; align-items: center; font-size: 14px; background-image: repeating-linear-gradient(to bottom, #fff, #fff 2px, #000 2px, #000 3px); }
-        .title-text { background-color: #fff; padding: 0 10px; margin: 0 auto; border: 2px solid #000; font-weight: bold; }
-        .content { padding: 20px; background-color: #ffffff; border: 2px solid #000; margin: 10px; text-align: center; }
-        .slot { border: 2px dashed #888; padding: 15px; margin-bottom: 15px; background-color: #f9f9f9; }
-        .slot p { margin: 0 0 10px 0; font-size: 14px; }
-        input[type="file"] { font-family: 'DungGeunMo'; font-size: 12px; }
-        .mac-button { background-color: #e0e0e0; border: 2px solid #000; border-top-color: #fff; border-left-color: #fff; padding: 12px 20px; font-family: 'DungGeunMo'; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; color: #333; }
-        .mac-button:active { border: 2px solid #000; border-bottom-color: #fff; border-right-color: #fff; background-color: #ccc; }
-        .twitter-btn { background-color: #1DA1F2; color: white; border-top-color: #6bc0f8; border-left-color: #6bc0f8; }
-        #loading-screen, #result-screen { display: none; }
-        .cursor { animation: blink 1s step-end infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .photo-frame { border: 10px solid #fff; border-bottom: 35px solid #fff; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); margin-bottom: 20px; background-color: #eee; height: 250px; display: flex; align-items: center; justify-content: center; color: #888; }
-    </style>
-</head>
-<body>
+<script>
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
 
-    <div class="mac-window">
-        <div class="title-bar"><div class="title-text">기억조작_자판기.app</div></div>
-        
-        <div class="content" id="upload-screen">
-            <p style="font-size: 14px; color: #555;">[ System: 서랍 속 추억을 복원합니다 ]</p>
-            <div class="slot"><p>▶ 인물 1 (Face_A)</p><input type="file" accept="image/*"></div>
-            <div class="slot"><p>▶ 인물 2 (Face_B)</p><input type="file" accept="image/*"></div>
-            <button class="mac-button" onclick="startLoading()">✨ 잊혀진 기억 인화하기</button>
-        </div>
+        async function startLoading() {
+            const fileInputs = document.querySelectorAll('input[type="file"]');
+            const file1 = fileInputs[0].files[0];
+            const file2 = fileInputs[1].files[0];
 
-        <div class="content" id="loading-screen">
-            <br><br><h2 id="loading-text" style="font-size: 16px;">기억의 파편 모으는 중...<span class="cursor">_</span></h2><br><br>
-            <p style="font-size: 12px; color: #888;">잠시만 기다려 주십시오.</p>
-        </div>
+            if (!file1 || !file2) {
+                alert("두 사람의 사진을 모두 인화구에 넣어주세요!");
+                return;
+            }
 
-        <div class="content" id="result-screen">
-            <div class="photo-frame">(여기에 AI가 만든 사진이 들어갑니다)</div>
-            <p style="font-size: 12px; color: #555;">💡 이미지를 꾹 눌러서 저장하세요!</p>
-            <button class="mac-button twitter-btn" onclick="shareTwitter()">🐦 X (트위터)에 자랑하기</button>
-            <button class="mac-button" onclick="retry()">🔄 다른 셀카 인화하기</button>
-        </div>
-    </div>
-
-    <script>
-        function startLoading() {
             document.getElementById("upload-screen").style.display = "none";
             document.getElementById("loading-screen").style.display = "block";
             let loadingText = document.getElementById("loading-text");
 
+            // 요청하신 로딩 멘트 4가지 반영
             setTimeout(() => { loadingText.innerHTML = "2015년의 새벽 공기 주입하는 중...<span class='cursor'>_</span>"; }, 1500);
             setTimeout(() => { loadingText.innerHTML = "서로를 바라보는 눈빛의 온도 계산 중...<span class='cursor'>_</span>"; }, 3000);
             setTimeout(() => { loadingText.innerHTML = "렌즈에 아련한 노이즈 한 꼬집 흩뿌리는 중...<span class='cursor'>_</span>"; }, 4500);
-            setTimeout(() => { loadingText.innerHTML = "시공간을 구부려 아이폰 6S에 욱여넣는 중...<span class='cursor'>_</span>"; }, 6000);
-            setTimeout(() => {
+            setTimeout(() => { loadingText.innerHTML = "시공간을 구부려 렌즈에 욱여넣는 중...<span class='cursor'>_</span>"; }, 6000);
+
+            try {
+                const base64_1 = await getBase64(file1);
+                const base64_2 = await getBase64(file2);
+
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image1: base64_1, image2: base64_2 })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert("인화 실패: " + data.error);
+                    retry();
+                    return;
+                }
+
+                const resultImageUrl = data.output ? data.output[0] : "https://via.placeholder.com/300?text=Error";
+                document.querySelector(".photo-frame").innerHTML = `<img src="${resultImageUrl}" style="max-width: 100%; max-height: 100%; border-radius: 5px;">`;
+
                 document.getElementById("loading-screen").style.display = "none";
                 document.getElementById("result-screen").style.display = "block";
-            }, 7500); 
+
+            } catch (error) {
+                alert("자판기 회선에 문제가 생겼습니다. 다시 시도해 주세요!");
+                retry();
+            }
         }
 
         function retry() {
@@ -72,22 +64,32 @@
             document.getElementById("loading-text").innerHTML = "기억의 파편 모으는 중...<span class='cursor'>_</span>";
         }
 
-        // 트위터 랜덤 멘트 기능!
         function shareTwitter() {
+            // 유행어를 배제하고 아련한 새벽 감성을 담은 멘트 20가지
             const messages = [
-                "2015년 서랍 속에서 발견된 기억조작 투샷 📸",
-                "시공간을 구부려 얻어낸 그 시절 우리의 셀카 ✨",
-                "렌즈에 낀 먼지까지 완벽한 레트로 감성 복원 💾",
-                "알 수 없는 오류로 인화된 6S 감성 셀카..."
+                "우리가 함께했던 그 새벽의 공기 🌙",
+                "빛바랜 사진 속에 남겨진 우리의 온도 ✨",
+                "시간이 지나도 변하지 않을 순간 🕰️",
+                "서랍 깊은 곳에서 꺼낸 소중한 기억 💾",
+                "서로를 마주 보던 그날의 밤산책 🚶‍♀️🚶‍♂️",
+                "오래된 카메라 렌즈 너머로 본 세상 📸",
+                "아무 말 없이도 온전히 느껴지던 온기 💖",
+                "우리의 밤은 낮보다 아름다웠다 🎆",
+                "거칠고 투박해서 더 애틋한 그 시절",
+                "말없이 맞잡은 두 손과 밤하늘 🌌",
+                "오래도록 기억하고 싶은 찰나의 장면",
+                "그때의 공기, 바람, 그리고 우리",
+                "흐릿해서 오히려 선명하게 남은 기억",
+                "돌아갈 수 없어서 더 아름다운 시간들 🫶",
+                "어두운 골목길을 밝혀주던 작은 가로등 불빛 ⚡",
+                "사진 한 장에 담긴 수많은 밤들",
+                "너와 함께 걸었던 모든 길이 좋았다",
+                "아련하게 번진 불빛처럼 따뜻했던 순간",
+                "우리가 지나온 계절들이 고스란히 담긴 컷",
+                "말을 아껴도 서로의 마음을 다 알았던 날"
             ];
-            // 4개 중 하나를 랜덤으로 뽑습니다
             const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-            const hashtag = "\n\n#기억조작_자판기";
-            
-            // 트위터 작성 창으로 이동 (멘트 자동 입력)
-            const twitterUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(randomMsg + hashtag);
-            window.open(twitterUrl, '_blank');
+            const hashtag = "\n\n#6S_감성셀카";
+            window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(randomMsg + hashtag), '_blank');
         }
     </script>
-</body>
-</html>
