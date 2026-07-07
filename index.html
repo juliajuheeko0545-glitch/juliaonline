@@ -48,44 +48,77 @@
         </div>
     </div>
 
-    <script>
-        function getBase64(file) {
+<script>
+        // 1. 에러 발생 시 폰 화면에 팝업으로 원인을 알려주는 기능 (답답함 해결!)
+        window.onerror = function(msg) {
+            alert("시스템 에러가 발생했습니다:\n" + msg);
+        };
+
+        // 2. 고화질 사진을 가볍게 압축하는 마법 (서버 기절 방지용)
+        function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        const MAX_WIDTH = 800; // 가로 크기를 최대 800픽셀로 줄입니다
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0, width, height);
+                        // 퀄리티 70%로 줄여서 내보냅니다
+                        resolve(canvas.toDataURL("image/jpeg", 0.7)); 
+                    };
+                };
                 reader.onerror = error => reject(error);
             });
         }
 
         async function startLoading() {
-            const fileInputs = document.querySelectorAll('input[type="file"]');
-            const file1 = fileInputs[0].files[0];
-            const file2 = fileInputs[1].files[0];
-
-            if (!file1 || !file2) {
-                alert("두 사람의 사진을 모두 넣어주세요!");
-                return;
-            }
-
-            document.getElementById("upload-screen").style.display = "none";
-            document.getElementById("loading-screen").style.display = "block";
-            let loadingText = document.getElementById("loading-text");
-
-            setTimeout(() => { loadingText.innerHTML = "2015년의 새벽 공기 주입하는 중...<span class='cursor'>_</span>"; }, 1500);
-            setTimeout(() => { loadingText.innerHTML = "서로를 바라보는 눈빛의 온도 계산 중...<span class='cursor'>_</span>"; }, 3000);
-            setTimeout(() => { loadingText.innerHTML = "렌즈에 아련한 노이즈 한 꼬집 흩뿌리는 중...<span class='cursor'>_</span>"; }, 4500);
-            setTimeout(() => { loadingText.innerHTML = "시공간을 구부려 렌즈에 욱여넣는 중...<span class='cursor'>_</span>"; }, 6000);
-
             try {
-                const base64_1 = await getBase64(file1);
-                const base64_2 = await getBase64(file2);
+                const fileInputs = document.querySelectorAll('input[type="file"]');
+                const file1 = fileInputs[0].files[0];
+                const file2 = fileInputs[1].files[0];
 
+                if (!file1 || !file2) {
+                    alert("두 사람의 사진을 모두 인화구에 넣어주세요!");
+                    return;
+                }
+
+                // 버튼을 누르자마자 즉시 로딩 화면으로 바뀝니다
+                document.getElementById("upload-screen").style.display = "none";
+                document.getElementById("loading-screen").style.display = "block";
+                let loadingText = document.getElementById("loading-text");
+
+                setTimeout(() => { loadingText.innerHTML = "2015년의 새벽 공기 주입하는 중...<span class='cursor'>_</span>"; }, 1500);
+                setTimeout(() => { loadingText.innerHTML = "서로를 바라보는 눈빛의 온도 계산 중...<span class='cursor'>_</span>"; }, 3000);
+                setTimeout(() => { loadingText.innerHTML = "렌즈에 아련한 노이즈 한 꼬집 흩뿌리는 중...<span class='cursor'>_</span>"; }, 4500);
+                setTimeout(() => { loadingText.innerHTML = "시공간을 구부려 렌즈에 욱여넣는 중...<span class='cursor'>_</span>"; }, 6000);
+
+                // 사진 압축을 먼저 진행합니다
+                const base64_1 = await compressImage(file1);
+                const base64_2 = await compressImage(file2);
+
+                // 서버(비밀 요원)로 압축된 사진 전송
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image1: base64_1, image2: base64_2 })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`서버 회선 오류 (코드: ${response.status})`);
+                }
 
                 const data = await response.json();
 
@@ -102,7 +135,7 @@
                 document.getElementById("result-screen").style.display = "block";
 
             } catch (error) {
-                alert("자판기 회선에 문제가 생겼습니다. 다시 시도해 주세요!");
+                alert("앗! 자판기에 문제가 생겼습니다.\n자세한 이유: " + error.message);
                 retry();
             }
         }
@@ -124,4 +157,7 @@
                 "우리가 지나온 계절들이 고스란히 담긴 컷", "말을 아껴도 서로의 마음을 다 알았던 날"
             ];
             const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-            const hashtag = "\n\n#6S
+            const hashtag = "\n\n#6S_감성셀카";
+            window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(randomMsg + hashtag), '_blank');
+        }
+    </script>
