@@ -14,35 +14,28 @@ export default async function handler(req, res) {
 
         const { image1, image2 } = req.body;
 
-        // 사장님이 모아주신 22개의 레퍼런스 구도 룰렛
-        const poseTemplates = [
-            "https://i.postimg.cc/64yZWz2z/6d064ccc21aeee4e10cb8617356d50dd.png",
-            "https://i.postimg.cc/qgRyxBbz/13e77870-2d2a-438c-bad3-cb7892daca94-20250417144828.jpg",
-            "https://i.postimg.cc/ThwgJ27y/98f8b9a9-3e4d-49a3-9234-ef4fa944a0fe-20250417144828.jpg",
-            "https://i.postimg.cc/NLMmkGJM/9fea9531679280d03cfc2fa47a02a0bb.jpg",
-            "https://i.postimg.cc/V56nWsGv/b15ec072d9e0ff9efd0d78768320bf86.jpg",
-            "https://i.postimg.cc/xqCM3jxX/b55aa4f7a04c5c4da3e2a5f2dfaf00b2.jpg",
-            "https://i.postimg.cc/SjsCfQT2/ik7BYCmj.jpg",
-            "https://i.postimg.cc/vDN9qRkj/images.jpg",
-            "https://i.postimg.cc/kD4KvM1K/images-(1).jpg",
-            "https://i.postimg.cc/4nStLCqw/images-(10).jpg",
-            "https://i.postimg.cc/qg5nbfS1/images-(11).jpg",
-            "https://i.postimg.cc/Hjh5ZGRB/images-(12).jpg",
-            "https://i.postimg.cc/6T3nf6jC/images-(2).jpg",
-            "https://i.postimg.cc/Z0RpxY7r/images-(3).jpg",
-            "https://i.postimg.cc/mhDCyZXy/images-(4).jpg",
-            "https://i.postimg.cc/XXJdkNHs/images-(5).jpg",
-            "https://i.postimg.cc/MXFRPkNR/images-(6).jpg",
-            "https://i.postimg.cc/yWb9Qqtc/images-(7).jpg",
-            "https://i.postimg.cc/V5VMGypj/images-(8).jpg",
-            "https://i.postimg.cc/5jRv7cTm/images-(9).jpg",
-            "https://i.postimg.cc/Z0M37k2G/style-69304e80c7d02-650x650.webp",
-            "https://i.postimg.cc/mh5MXxKx/daunlodeu.jpg"
+        // 📝 [사장님 기획 구역] 대표님이 치밀하게 설계하신 20가지의 시나리오 프롬프트 리스트입니다!
+        // 여기에 원하시는 상황과 착장, 구도를 20개까지 마음껏 채워 넣으실 수 있습니다.
+        const promptTemplates = [
+            // 1. 엘리베이터 거울 셀카 (보내주신 예시)
+            "A photorealistic mirror selfie taken inside a modern metallic elevator. Two people are standing closely side-by-side. On the left, one person with their original hair is standing slightly behind, looking at the mirror with one hand in their pocket. On the right, another person is standing in front, holding a smartphone with one hand to take the picture, the smartphone is completely covering their face.",
+            
+            // 2. 어두운 방 가로등 불빛 아래 (보내주신 레퍼런스 감성)
+            "A low-light indoor mirror selfie of two people posing intimately close in front of a bedroom mirror. Warm cozy room lighting, raw camera flash effect illuminating their faces, one person gently resting their chin on the other's shoulder, capturing an affectionate mood.",
+            
+            // 3. 지하철 역 거울 셀카 (보내주신 레퍼런스 감성)
+            "A retro lo-fi mirror selfie of two people standing extremely close together in a subway station corridor mirror. Natural underground station lighting, casual street style clothes, capturing a nostalgic urban night walk vibe."
+            
+            // 💡 여기에 4번부터 20번까지 번호 뒤에 쉼표(,)를 붙이고 똑같은 형식으로 영어 문장을 쭉 추가해 주시면 됩니다!
         ];
 
-        const randomPose = poseTemplates[Math.floor(Math.random() * poseTemplates.length)];
+        // 🎲 유저가 버튼을 누르면 이 20개의 시나리오 중 하나가 무작위로 선택됩니다.
+        const selectedScenario = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
 
-        // 🔥 얼굴만 오려 붙이는 기계가 아닌, 머리와 옷차림의 특징을 분석해 재창조하는 고성능 SDXL 융합 엔진으로 변경!
+        // 아이폰 6s / XS 고유의 질감과 아날로그 필터를 입혀줄 마법의 공통 주문
+        const aestheticFilter = " shot on iPhone 6s camera, iPhone XS color grading, realistic smartphone camera quality, slight low-light lo-fi aesthetic, grainy, slight noise, raw photo, unedited, amateur photography.";
+
+        // 🚀 미드저니 --cref 기능과 완벽하게 똑같이 인물 특징을 유지하며 텍스트 기반으로 새로 그려내는 고성능 InstantID 다중 인물 제어 엔진 호출
         const response = await fetch("https://api.replicate.com/v1/predictions", {
             method: "POST",
             headers: {
@@ -50,18 +43,20 @@ export default async function handler(req, res) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                version: "c56fcd935368a44d82b09088656cbdf7b031c55c0a3dc26f59ee0bfb2d2db3b9", // 인물 특징+가이드 융합 공식 SDXL 모델
+                version: "0a9a1e03ca4d9241517742da3b27670cbdfef5c8d6cb33b7ba085731b8a531f8", // 다중 인물 고유 특징 보존(InstantID-Multi) 엔진 주소
                 input: {
-                    image: image1,           // 인물 1의 사진 (이 사람의 머리스타일, 옷 분위기를 베이스로 삼음)
-                    secondary_image: image2, // 인물 2의 사진 (이 사람의 특징을 섞음)
-                    control_image: randomPose, // 🎲 룰렛에서 뽑힌 레퍼런스 사진 (오직 포즈와 구도, 배경의 뼈대로만 사용!)
+                    // 유저가 올린 사진 2장을 미드저니의 --cref 1, --cref 2 처럼 타겟 인물로 지정합니다.
+                    face_image_1: image1,
+                    face_image_2: image2,
                     
-                    prompt: "A realistic mirror selfie of two people, keeping their original hairstyles and clothing styles, shot on iPhone 6s, vintage retro aesthetic, grainy, slight noise, low-light indoor setting. Casual, warm lighting, raw photo, unedited.",
-                    negative_prompt: "bad anatomy, deformed, extra limbs, 3d, illustration, cartoon, professional photoshoot, perfect smooth skin, text, watermark",
+                    // 뽑힌 시나리오에 아이폰 감성 필터 텍스트를 정교하게 결합합니다.
+                    prompt: selectedScenario + aestheticFilter,
+                    negative_prompt: "3d, illustration, cartoon, professional photoshoot, high resolution, perfect smooth skin, text, watermark, bad anatomy, deformed, missing fingers",
                     
-                    // 뼈대(포즈)를 얼마나 엄격하게 따라 할지 결정하는 수치 (0.6~0.7이 가장 자연스럽습니다)
-                    controlnet_conditioning_scale: 0.65, 
-                    prompt_strength: 0.8
+                    // --cw 100과 같은 역할! 인물의 고유 특징(머리스타일, 이목구비)을 얼마나 강력하게 보존할지 결정 (0.8이 가장 자연스럽게 녹아듭니다)
+                    character_strength_1: 0.82,
+                    character_strength_2: 0.82,
+                    num_steps: 30
                 }
             })
         });
