@@ -51,9 +51,8 @@ export default async function handler(req, res) {
         // 🎲 유저가 버튼을 누를 때마다 20개의 시나리오 중 하나를 무작위 추첨!
         const selectedScenario = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
 
-        // 🔥 [해결책] 버전 해시값을 제거하고 모델 이름 고유 주소로 직접 찌릅니다.
-        // 미드저니 --cref처럼 인물 일관성을 완벽히 유지해주는 인스턴트ID 본부 공장 주소입니다.
-        const response = await fetch("https://api.replicate.com/v1/models/instantx/instantid/predictions", {
+        // 🔥 [해결책] 대표님이 직접 찾아내신 '진짜' 다중 인물 융합 모델의 공식 주소로 직행합니다!
+        const response = await fetch("https://api.replicate.com/v1/models/flux-kontext-apps/multi-image-kontext-pro/predictions", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -62,15 +61,8 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 input: {
                     prompt: selectedScenario,
-                    negative_prompt: "3d, illustration, cartoon, low quality, bad anatomy, deformed",
-                    
-                    // 유저가 올린 단독 사진 두 장을 각각 참조 이미지로 강제 전달합니다.
-                    face_image: image1,
-                    face_image_2: image2,
-                    
-                    // --cw 100 역할을 해줄 가중치 옵션 (기본값 설정)
-                    identity_strength: 0.8,
-                    num_steps: 30
+                    input_image_1: image1,
+                    input_image_2: image2
                 }
             })
         });
@@ -80,7 +72,7 @@ export default async function handler(req, res) {
         try {
             data = JSON.parse(responseText);
         } catch (parseError) {
-            return res.status(500).json({ error: "서버 응답 파싱 실패", details: responseText });
+            return res.status(500).json({ error: "레플리케이트 서버 응답 오류", details: responseText });
         }
         
         if (!response.ok) {
