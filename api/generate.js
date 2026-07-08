@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
         const { image1, image2 } = req.body;
 
-        // 🎯 직접 모아주신 22개의 레퍼런스 구도 룰렛!
+        // 사장님이 모아주신 22개의 레퍼런스 구도 룰렛
         const poseTemplates = [
             "https://i.postimg.cc/64yZWz2z/6d064ccc21aeee4e10cb8617356d50dd.png",
             "https://i.postimg.cc/qgRyxBbz/13e77870-2d2a-438c-bad3-cb7892daca94-20250417144828.jpg",
@@ -40,9 +40,9 @@ export default async function handler(req, res) {
             "https://i.postimg.cc/mh5MXxKx/daunlodeu.jpg"
         ];
 
-        // 유저가 버튼을 누를 때마다 이 22장 중 하나가 무작위로 선택됩니다.
         const randomPose = poseTemplates[Math.floor(Math.random() * poseTemplates.length)];
 
+        // 🔥 얼굴만 오려 붙이는 기계가 아닌, 머리와 옷차림의 특징을 분석해 재창조하는 고성능 SDXL 융합 엔진으로 변경!
         const response = await fetch("https://api.replicate.com/v1/predictions", {
             method: "POST",
             headers: {
@@ -50,18 +50,18 @@ export default async function handler(req, res) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                version: "24ed4a267cd458569aa9f4da971ccc8d3587eaa47c43cf79572c3c7738a390f9",
+                version: "c56fcd935368a44d82b09088656cbdf7b031c55c0a3dc26f59ee0bfb2d2db3b9", // 인물 특징+가이드 융합 공식 SDXL 모델
                 input: {
-                    identity_image_1: image1,
-                    identity_image_2: image2,
+                    image: image1,           // 인물 1의 사진 (이 사람의 머리스타일, 옷 분위기를 베이스로 삼음)
+                    secondary_image: image2, // 인물 2의 사진 (이 사람의 특징을 섞음)
+                    control_image: randomPose, // 🎲 룰렛에서 뽑힌 레퍼런스 사진 (오직 포즈와 구도, 배경의 뼈대로만 사용!)
                     
-                    // 뽑힌 사진을 구도 뼈대와 색감 기준으로 설정
-                    base_image: randomPose,
-                    style_image: randomPose,
+                    prompt: "A realistic mirror selfie of two people, keeping their original hairstyles and clothing styles, shot on iPhone 6s, vintage retro aesthetic, grainy, slight noise, low-light indoor setting. Casual, warm lighting, raw photo, unedited.",
+                    negative_prompt: "bad anatomy, deformed, extra limbs, 3d, illustration, cartoon, professional photoshoot, perfect smooth skin, text, watermark",
                     
-                    prompt: "A realistic mirror selfie of a young couple, shot on iPhone 6s, vintage retro aesthetic, grainy, slight noise, low-light indoor setting. Affectionate mood, casual, warm lighting, raw photo, unedited, amateur photography.",
-                    negative_prompt: "3d, illustration, cartoon, professional photoshoot, high resolution, perfect smooth skin, text, watermark",
-                    guidance_scale: 3
+                    // 뼈대(포즈)를 얼마나 엄격하게 따라 할지 결정하는 수치 (0.6~0.7이 가장 자연스럽습니다)
+                    controlnet_conditioning_scale: 0.65, 
+                    prompt_strength: 0.8
                 }
             })
         });
