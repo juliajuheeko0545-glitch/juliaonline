@@ -1,6 +1,5 @@
 // api/generate.js
 export default async function handler(req, res) {
-    // 프론트엔드가 뻗지 않도록 무조건 JSON 형태로 응답하는 안전장치
     res.setHeader('Content-Type', 'application/json');
 
     if (req.method !== "POST") {
@@ -13,18 +12,24 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Vercel 대기표 상태 확인 (폴링 로직)
+        // 🚨 [엑스박스 해결의 핵심 로직]
         if (req.body.predictionId) {
             const checkRes = await fetch(`https://api.replicate.com/v1/predictions/${req.body.predictionId}`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             const checkData = await checkRes.json();
+            
+            // 모델이 완성본을 그냥 '글자(String)'로 주면 웹사이트가 "h"만 읽고 엑스박스를 띄웁니다.
+            // 웹사이트가 무조건 정상적으로 읽을 수 있게 [배열] 형태로 덮어 씌워서 포장해줍니다!
+            if (checkData.status === "succeeded" && typeof checkData.output === "string") {
+                checkData.output = [checkData.output];
+            }
+            
             return res.status(200).json(checkData);
         }
 
         const { image1, image2 } = req.body;
 
-        // 📝 대표님이 정밀하게 깎아내신 20가지 기억조작 시나리오 리스트
         const promptTemplates = [
             "A close-up mirror selfie in a dark room. A man on the left is leaning in closely, pressing his face against the woman's cheek. The woman is holding a smartphone, completely covering her face. Shot on iPhone 6s camera, low-light lo-fi aesthetic.",
             "A close-up selfie of two people wearing baseball caps. The woman on the left is making a playful duck face. The man on the right is smiling warmly at the camera. Dark background. Shot on iPhone 6s camera, flash photography aesthetic.",
@@ -48,10 +53,8 @@ export default async function handler(req, res) {
             "A mirror selfie in a public subway station. A man is holding the smartphone taking the picture. A woman beside him is making a half-heart shape with her fingers pointing towards the phone in the mirror. They are leaning in close together. Shot on iPhone 6s camera, realistic smartphone camera quality, fluorescent public lighting."
         ];
 
-        // 🎲 유저가 버튼을 누를 때마다 20개의 시나리오 중 하나를 무작위 추첨!
         const selectedScenario = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
 
-        // 🔥 [해결책] 대표님이 직접 찾아내신 '진짜' 다중 인물 융합 모델의 공식 주소로 직행합니다!
         const response = await fetch("https://api.replicate.com/v1/models/flux-kontext-apps/multi-image-kontext-pro/predictions", {
             method: "POST",
             headers: {
