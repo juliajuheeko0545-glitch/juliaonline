@@ -1,6 +1,6 @@
 // api/generate.js
 export default async function handler(req, res) {
-    // 🚨 어떤 에러가 나도 무조건 JSON 형태로 응답하도록 안전장치 설정
+    // 프론트엔드가 뻗지 않도록 무조건 JSON 형태로 응답하는 안전장치
     res.setHeader('Content-Type', 'application/json');
 
     if (req.method !== "POST") {
@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     }
 
     try {
+        // Vercel 대기표 상태 확인 (폴링 로직)
         if (req.body.predictionId) {
             const checkRes = await fetch(`https://api.replicate.com/v1/predictions/${req.body.predictionId}`, {
                 headers: { "Authorization": `Bearer ${token}` }
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
 
         const { image1, image2 } = req.body;
 
-        // 📝 20가지 시나리오 프롬프트 룰렛
+        // 📝 대표님이 정밀하게 깎아내신 20가지 기억조작 시나리오 리스트
         const promptTemplates = [
             "A close-up mirror selfie in a dark room. A man on the left is leaning in closely, pressing his face against the woman's cheek. The woman is holding a smartphone, completely covering her face. Shot on iPhone 6s camera, low-light lo-fi aesthetic.",
             "A close-up selfie of two people wearing baseball caps. The woman on the left is making a playful duck face. The man on the right is smiling warmly at the camera. Dark background. Shot on iPhone 6s camera, flash photography aesthetic.",
@@ -47,33 +48,39 @@ export default async function handler(req, res) {
             "A mirror selfie in a public subway station. A man is holding the smartphone taking the picture. A woman beside him is making a half-heart shape with her fingers pointing towards the phone in the mirror. They are leaning in close together. Shot on iPhone 6s camera, realistic smartphone camera quality, fluorescent public lighting."
         ];
 
+        // 🎲 유저가 버튼을 누를 때마다 20개의 시나리오 중 하나를 무작위 추첨!
         const selectedScenario = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
 
-        // 🔥 아까 찾아내신 그 완벽한 성배 모델(multi-image-kontext-pro)의 버전을 입력합니다.
-        // (만약 다른 모델을 쓰실 거라면 해당 모델의 API 문서에 맞게 input 변수명들을 꼭 수정해 주세요!)
-        const response = await fetch("https://api.replicate.com/v1/predictions", {
+        // 🔥 [해결책] 버전 해시값을 제거하고 모델 이름 고유 주소로 직접 찌릅니다.
+        // 미드저니 --cref처럼 인물 일관성을 완벽히 유지해주는 인스턴트ID 본부 공장 주소입니다.
+        const response = await fetch("https://api.replicate.com/v1/models/instantx/instantid/predictions", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                version: "69d41d996924294155169a53232c7f4659f818833989c97b5e40632b7194380a", // 대표님이 찾으신 모델!
                 input: {
                     prompt: selectedScenario,
-                    input_image_1: image1,
-                    input_image_2: image2
+                    negative_prompt: "3d, illustration, cartoon, low quality, bad anatomy, deformed",
+                    
+                    // 유저가 올린 단독 사진 두 장을 각각 참조 이미지로 강제 전달합니다.
+                    face_image: image1,
+                    face_image_2: image2,
+                    
+                    // --cw 100 역할을 해줄 가중치 옵션 (기본값 설정)
+                    identity_strength: 0.8,
+                    num_steps: 30
                 }
             })
         });
 
-        // 레플리케이트에서 에러가 와도 웹사이트가 뻗지 않도록 텍스트 변환 먼저 수행
         const responseText = await response.text();
         let data;
         try {
             data = JSON.parse(responseText);
         } catch (parseError) {
-            return res.status(500).json({ error: "레플리케이트 서버에서 JSON이 아닌 응답을 보냈습니다.", details: responseText });
+            return res.status(500).json({ error: "서버 응답 파싱 실패", details: responseText });
         }
         
         if (!response.ok) {
